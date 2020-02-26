@@ -2,13 +2,10 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux'
 import { Titlebar, Container, Nestedlist, Panel, Button, BreadcrumbBar } from '@sencha/ext-react-modern'
-//import { Transition } from '@sencha/ext-react-transition'
-
 import NavTree from './NavTree';
 import NavView from './NavView';
 import Files from './Files';
 import * as actions from './actions';
-import Breadcrumbs from './Breadcrumbs';
 var REACT_VERSION = require('react').version
 
 Ext.require([
@@ -36,12 +33,35 @@ class Layout extends Component {
       linear-gradient(90deg, #f5f5f5 1.1px, transparent 0)
   `;
 
+  onBreadcrumbCreated = ({cmp}) => {
+    console.log('onBreadcrumbCreated')
+    this.breadcrumbCmp = cmp
+  }
+
+  onSelectionchange=({treelist, record, eOpts}) => {
+    console.log('onSelectionchange')
+    var node = record;
+    this.onNavChange(node)
+  }
+
+  onNavChange = (node) => {
+    console.log('onNavChange')
+    var nodeId = node.getId()
+    location.hash = nodeId;
+    this.breadcrumbCmp.setSelection(node)
+  }
+
+  nav(node) {
+    console.log('nav')
+    var nodeId = node.getId();
+    location.hash = nodeId;
+  }
+
   componentDidMount() {
+    console.log('componentDidMount')
     this.rightContainer.cmp.updateHtml('Build: ' + BUILD_VERSION);
     if (Ext.os.is.Phone) {
       const node = this.props.selectedNavNode;
-      //this.selectedNode = this.props.selectedNavNode;
-
       if (node) {
         /**
          * Let's go to the parent's node without animation.
@@ -74,6 +94,7 @@ class Layout extends Component {
   }
 
   componentDidUpdate(previousProps) {
+    console.log('componentDidUpdate')
     if(Ext.os.is.Phone) {
       const node = this.props.selectedNavNode;
       const nav = this.phoneNav.cmp;
@@ -97,25 +118,8 @@ class Layout extends Component {
     return node.data.premium || this.isPremium(node.parentNode);
   }
 
-  onReady = ({cmp, cmpObj}) => {
-    console.log('onReady')
-    this.breadcrumbCmp = cmp
-    this.breadcrumbCmp.setSelection(this.props.node)
-  }
-
   changeBreadcrumbbar = ({sender, node, prevNode, eOpts}) => {
     this.nav(node)
-  }
-
-  nav(node) {
-    var nodeId = node.getId();
-    location.hash = nodeId;
-  }
-
-  onNavChange = (node) => {
-    var nodeId = node.getId()
-    location.hash = nodeId;
-    this.breadcrumbCmp.setSelection(node)
   }
 
   render() {
@@ -182,31 +186,29 @@ class Layout extends Component {
               align="right"></Container>
             </Titlebar>
             <Container layout="fit" flex={1}>
+              <BreadcrumbBar
+                ref={breadcrumb => {this.breadcrumb = breadcrumb}}
+                onCreated={this.onBreadcrumbCreated}
+                onChange={this.changeBreadcrumbbar}
+                docked="top"
+                showIcons= "true"
+                store={navStore}
+                useSplitButtons
+              >
+              </BreadcrumbBar>
               <NavTree
+                onSelectionchange={this.onSelectionchange}
+                selection={selectedNavNode}
+                collapsed={!showTree}
                 docked="left"
-                width="300"
+                width="400"
                 resizable={{
                   edges: 'east',
                   dynamic: true
                 }}
                 store={navStore}
-                selection={selectedNavNode}
-                onSelectionchange={({treelist, record, eOpts}) => {
-                  var node = record;
-                  this.onNavChange(node)
-                }}
-                collapsed={!showTree}
               />
-              <BreadcrumbBar
-                  docked="top"
-                  showIcons= "true"
-                  store={navStore}
-                  onReady={this.onReady}
-                  onChange={this.changeBreadcrumbbar}
-                  ref="appBreadcrumb"
-                  useSplitButtons
-              >
-              </BreadcrumbBar>
+
               { component
                 ? (
                   <Panel layout={layout} bodyStyle={this.bodyStyle} scrollable key={selectedNavNode.id} autoSize={layout !== 'fit'}>
@@ -224,13 +226,13 @@ class Layout extends Component {
           </Container>
           { files && (
             <Button
-                align="right"
-                iconCls={'x-font-icon ' + (showCode ? 'md-icon-close' : 'md-icon-code') }
-                ui="fab"
-                top={Ext.os.is.Desktop ? 43 : 35}
-                right={21}
-                zIndex={1000}
-                onTap={actions.toggleCode}
+              align="right"
+              iconCls={'x-font-icon ' + (showCode ? 'md-icon-close' : 'md-icon-code') }
+              ui="fab"
+              top={Ext.os.is.Desktop ? 43 : 35}
+              right={21}
+              zIndex={1000}
+              onTap={actions.toggleCode}
             />
           )}
           { files && (
